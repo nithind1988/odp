@@ -250,6 +250,33 @@ typedef struct {
 	odp_bool_t weights_supported;
 } odp_tm_level_capabilities_t;
 
+/** The tm_pkt_prio_mode_t enumeration type is used to indicate different
+ * modes a tm system supports with respect to assigning priority to a packet
+ * and propagating it across TM system. All the nodes in a TM system can
+ * function only on single mode specified at time of odp_tm_create().
+ */
+typedef enum odp_tm_pkt_prio_mode {
+	/** Indicates Packet priority preserve mode. In this mode, a packet gets
+	 * its priority based on a TM queue it gets enqueued to and then it
+	 * carries the same priority along with it as long as it is in the TM
+	 * system. At every TM node in the topology, that specific pkt is
+	 * scheduled as per that priority.
+	 */
+	ODP_TM_PKT_PRIO_MODE_PRESERVE,
+
+	/** Indicates Packet priority overwrite mode. In this mode, a packet
+	 * gets a new priority every time it passes through a TM queue or a
+	 * TM node. All the packets fed by a fan-in node will get the same
+	 * priority and that will be valid until overwritten again by another TM
+	 * node. This priority is part of the TM fan-in node parameters and is
+	 * fixed at node creation time.
+	 */
+	ODP_TM_PKT_PRIO_MODE_OVERWRITE,
+
+	/** Max enum of Packet priority mode */
+	ODP_TM_PKT_PRIO_MODE_MAX,
+} odp_tm_pkt_prio_mode_t;
+
 /** TM Capabilities Record.
  *
  * The odp_tm_capabilities_t record type is used to describe the feature set
@@ -385,6 +412,23 @@ typedef struct {
 	 * the parameters of the threshold profile of any TM node or TM queue.
 	 */
 	odp_bool_t dynamic_threshold_update;
+
+	/** Indicates the packet priority modes supported by a TM systems on a
+	 * platform. A platform can support multiple packet priority modes. The
+	 * actual mode a TM system runs with is defined by
+	 * odp_tm_requirements_t.
+	 */
+	odp_bool_t pkt_prio_modes[ODP_TM_PKT_PRIO_MODE_MAX];
+
+	/** Maximum number of schedulers supported by a TM node at any level.
+	 * A TM node contains a WFQ/WRR scheduler for each packet priority level
+	 * for which the node has more than one possible input. TM topology and
+	 * priority configuration must be made so that the resulting number of
+	 * WFQ/WRR schedulers does not exceed this capability in any TM node.
+	 *
+	 * The value can vary between 0 and ODP_TM_MAX_PRIORITIES.
+	 */
+	uint8_t max_schedulers_per_node;
 } odp_tm_capabilities_t;
 
 /** Per Level Requirements
@@ -496,6 +540,12 @@ typedef struct {
 	 * the application expects to use this color in conjunction with one or
 	 * more of the marking API's. */
 	odp_bool_t marking_colors_needed[ODP_NUM_PACKET_COLORS];
+
+	/** Packet priority mode.
+	 * TM capabilities indicate which modes are supported.
+	 * The default value is ODP_TM_PKT_PRIO_MODE_PRESERVE.
+	 */
+	odp_tm_pkt_prio_mode_t pkt_prio_mode;
 
 	/** The per_level array specifies the TM system requirements that
 	 * can vary based upon the tm_node level. */
@@ -1351,6 +1401,22 @@ typedef struct {
 	 * greater levels may be connected to the fan-in of tm_node's with
 	 * numerically smaller levels. */
 	uint8_t level;
+
+	/** New strict priority level assigned to packets going through this
+	 * node when packet priority mode is ODP_TM_PKT_PRIO_MODE_OVERWRITE.
+	 * In other packet priority modes this field is ignored. The new
+	 * priority does not affect packet processing in this node but in
+	 * its destination node.
+	 *
+	 * The value must be in the range 0..ODP_TM_MAX_PRIORITIES-1.
+	 * Additionally, the total number of possible priorities seen by
+	 * the destination node must not exceed the max priority configured
+	 * for the destination node.
+	 *
+	 * @see odp_tm_pkt_prio_mode_t
+	 * @see odp_tm_level_requirements_t::max_priority
+	 */
+	uint8_t priority;
 } odp_tm_node_params_t;
 
 /** odp_tm_node_params_init() must be called to initialize any
