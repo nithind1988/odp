@@ -401,6 +401,52 @@ typedef struct {
 	 * ODP_TM_QUERY_THRESHOLDS.
 	 */
 	uint32_t tm_queue_query_flags;
+
+	/** dynamic_topology_update indicates support for TM system dynamic
+	 * topology update. A dynamic topology update is defined as update to
+	 * a TM system topology while TM system is not in stopped state.
+	 * When TRUE, application can update topology dynamically
+	 * without bringing the TM system to stopped state. When FALSE,
+	 * application has to call odp_tm_stop() before updating the
+	 * topology and odp_tm_start() after completing the update.
+	 */
+	odp_bool_t dynamic_topology_update;
+
+	/** dynamic_shaper_update indicates support for TM system's dynamic
+	 * shaper profile changes. When TRUE, application can update shaper
+	 * profile of a TM queue or TM node dynamically.
+	 * When FALSE, it implies that TM system should be brought to
+	 * stopped state before doing any TM node or TM queue shaper profile
+	 * change.
+	 */
+	odp_bool_t dynamic_shaper_update;
+
+	/** dynamic_sched_update indicates support for TM system's dynamic
+	 * sched profile changes. When TRUE, application can update sched
+	 * profile of a TM queue or TM node dynamically.
+	 * When FALSE, it implies that TM system should be brought to
+	 * stopped state before doing any TM node or TM queue sched profile
+	 * change.
+	 */
+	odp_bool_t dynamic_sched_update;
+
+	/** dynamic_wred_update indicates support for TM system's dynamic
+	 * wred profile changes. When TRUE, application can update wred
+	 * profile of a TM queue or TM node dynamically.
+	 * When FALSE, it implies that TM system should be brought to
+	 * stopped state before doing any TM node or TM queue wred profile
+	 * change.
+	 */
+	odp_bool_t dynamic_wred_update;
+
+	/** dynamic_threshold_update indicates support for TM system's dynamic
+	 * threshold profile changes. When TRUE, application can update
+	 * threshold profile of a TM queue or TM node dynamically.
+	 * When FALSE, it implies that TM system should be brought to
+	 * stopped state before doing any TM node or TM queue threshold profile
+	 * change.
+	 */
+	odp_bool_t dynamic_threshold_update;
 } odp_tm_capabilities_t;
 
 /** Per Level Requirements
