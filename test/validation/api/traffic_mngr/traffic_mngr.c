@@ -281,6 +281,11 @@ static uint32_t        num_odp_tm_systems;
 
 static odp_tm_capabilities_t tm_capabilities;
 
+static bool dynamic_shaper_update = true;
+static bool dynamic_sched_update = true;
+static bool dynamic_threshold_update = true;
+static bool dynamic_wred_update = true;
+
 static odp_tm_shaper_t    shaper_profiles[NUM_SHAPER_PROFILES];
 static odp_tm_sched_t     sched_profiles[NUM_SCHED_PROFILES];
 static odp_tm_threshold_t threshold_profiles[NUM_THRESHOLD_PROFILES];
@@ -1658,9 +1663,23 @@ static int create_tm_system(void)
 		return -1;
 	}
 
+	/* Update dynamic capability flags from created tm system */
+	dynamic_shaper_update = tm_capabilities.dynamic_shaper_update;
+	dynamic_sched_update = tm_capabilities.dynamic_sched_update;
+	dynamic_threshold_update = tm_capabilities.dynamic_threshold_update;
+	dynamic_wred_update = tm_capabilities.dynamic_wred_update;
+
 	found_odp_tm = odp_tm_find(tm_name, &requirements, &egress);
 	if ((found_odp_tm == ODP_TM_INVALID) || (found_odp_tm != odp_tm)) {
 		ODPH_ERR("odp_tm_find() failed\n");
+		return -1;
+	}
+
+	/* Start TM system */
+	CU_ASSERT((rc = odp_tm_start(odp_tm)) == 0);
+	if (rc != 0) {
+		ODPH_ERR("odp_tm_start() failed for tm: %" PRIx64 "\n",
+			 odp_tm_to_u64(odp_tm));
 		return -1;
 	}
 
@@ -2042,11 +2061,16 @@ static int destroy_tm_systems(void)
 
 	/* Close/free the TM systems. */
 	for (idx = 0; idx < num_odp_tm_systems; idx++) {
+		if (odp_tm_stop(odp_tm_systems[idx]) != 0)
+			return -1;
+
 		if (destroy_tm_subtree(root_node_descs[idx]) != 0)
 			return -1;
 
 		if (odp_tm_destroy(odp_tm_systems[idx]) != 0)
 			return -1;
+
+		odp_tm_systems[idx] = ODP_TM_INVALID;
 	}
 
 	/* Close/free the TM profiles. */
@@ -2058,7 +2082,9 @@ static int destroy_tm_systems(void)
 
 static int traffic_mngr_suite_init(void)
 {
+	odp_tm_capabilities_t capabilities_array[MAX_CAPABILITIES];
 	uint32_t payload_len, copy_len;
+	int rc, i;
 
 	/* Initialize some global variables. */
 	num_pkts_made   = 0;
@@ -2097,6 +2123,26 @@ static int traffic_mngr_suite_init(void)
 	if (open_pktios() != 0)
 		return -1;
 
+	/* Fetch initial dynamic update capabilities, it will be updated
+	 * later after TM system is created.
+	 */
+	rc = odp_tm_capabilities(capabilities_array, MAX_CAPABILITIES);
+	if (rc <= 0)
+		return -1;
+
+	for (i = 0; i < rc; i++) {
+		if (!capabilities_array[i].dynamic_shaper_update)
+			dynamic_shaper_update = false;
+
+		if (!capabilities_array[i].dynamic_sched_update)
+			dynamic_sched_update = false;
+
+		if (!capabilities_array[i].dynamic_threshold_update)
+			dynamic_threshold_update = false;
+
+		if (!capabilities_array[i].dynamic_wred_update)
+			dynamic_wred_update = false;
+	}
 	return 0;
 }
 
@@ -2415,6 +2461,7 @@ static int set_shaper(const char    *node_name,
 	odp_tm_shaper_params_t shaper_params;
 	odp_tm_shaper_t        shaper_profile;
 	odp_tm_node_t          tm_node;
+	int rc;
 
 	tm_node = find_tm_node(0, node_name);
 	if (tm_node == ODP_TM_INVALID) {
@@ -2431,6 +2478,13 @@ static int set_shaper(const char    *node_name,
 	shaper_params.shaper_len_adjust = 0;
 	shaper_params.dual_rate         = 0;
 
+	if (!dynamic_shaper_update) {
+		/* Stop TM system before update when dynamic update is not
+		 * supported.
+		 */
+		CU_ASSERT_FATAL(odp_tm_stop(odp_tm_systems[0]) == 0);
+	}
+
 	/* First see if a shaper profile already exists with this name, in
 	 * which case we use that profile, else create a new one. */
 	shaper_profile = odp_tm_shaper_lookup(shaper_name);
@@ -2443,7 +2497,13 @@ static int set_shaper(const char    *node_name,
 		num_shaper_profiles++;
 	}
 
-	return odp_tm_node_shaper_config(tm_node, shaper_profile);
+	rc = odp_tm_node_shaper_config(tm_node, shaper_profile);
+
+	if (!dynamic_shaper_update) {
+		/* Start TM system, post update */
+		CU_ASSERT_FATAL(odp_tm_start(odp_tm_systems[0]) == 0);
+	}
+	return rc;
 }
 
 static int traffic_mngr_check_shaper(void)
@@ -2480,6 +2540,13 @@ static int traffic_mngr_check_scheduler(void)
 		ODPH_DBG("Rerun with more cpu resources\n");
 		return ODP_TEST_INACTIVE;
 	}
+
+	/* Cannot run this test without dynamic shaper update as shaper update
+	 * is performed while traffic is in pipeline and pkt shouldn't be
+	 * dropped.
+	 */
+	if (!dynamic_shaper_update)
+		return ODP_TEST_INACTIVE;
 
 	return ODP_TEST_ACTIVE;
 }
@@ -2617,6 +2684,13 @@ static int set_sched_fanin(const char         *node_name,
 	if (node_desc == NULL)
 		return -1;
 
+	if (!dynamic_sched_update) {
+		/* Stop TM system before update when dynamic update is not
+		 * supported.
+		 */
+		CU_ASSERT_FATAL(odp_tm_stop(odp_tm_systems[0]) == 0);
+	}
+
 	fanin_cnt = MIN(node_desc->num_children, FANIN_RATIO);
 	for (fanin = 0; fanin < fanin_cnt; fanin++) {
 		odp_tm_sched_params_init(&sched_params);
@@ -2653,10 +2727,15 @@ static int set_sched_fanin(const char         *node_name,
 		rc = odp_tm_node_sched_config(tm_node, fanin_node,
 					      sched_profile);
 		if (rc != 0)
-			return -1;
+			goto exit;
 	}
 
-	return 0;
+exit:
+	if (!dynamic_sched_update) {
+		/* Start TM system, post update */
+		CU_ASSERT_FATAL(odp_tm_start(odp_tm_systems[0]) == 0);
+	}
+	return rc;
 }
 
 static int test_sched_queue_priority(const char *shaper_name,
@@ -2935,6 +3014,13 @@ static int set_queue_thresholds(odp_tm_queue_t             tm_queue,
 	odp_tm_threshold_t threshold_profile;
 	int ret;
 
+	if (!dynamic_threshold_update) {
+		/* Stop TM system before update when dynamic update is not
+		 * supported.
+		 */
+		CU_ASSERT_FATAL(odp_tm_stop(odp_tm_systems[0]) == 0);
+	}
+
 	/* First see if a threshold profile already exists with this name, in
 	 * which case we use that profile, else create a new one. */
 	threshold_profile = odp_tm_thresholds_lookup(threshold_name);
@@ -2942,17 +3028,25 @@ static int set_queue_thresholds(odp_tm_queue_t             tm_queue,
 		ret = odp_tm_thresholds_params_update(threshold_profile,
 						      threshold_params);
 		if (ret)
-			return ret;
+			goto exit;
 	} else {
 		threshold_profile = odp_tm_threshold_create(threshold_name,
 							    threshold_params);
-		if (threshold_profile == ODP_TM_INVALID)
-			return -1;
+		if (threshold_profile == ODP_TM_INVALID) {
+			ret = -1;
+			goto exit;
+		}
 		threshold_profiles[num_threshold_profiles] = threshold_profile;
 		num_threshold_profiles++;
 	}
 
-	return odp_tm_queue_threshold_config(tm_queue, threshold_profile);
+	ret = odp_tm_queue_threshold_config(tm_queue, threshold_profile);
+exit:
+	if (!dynamic_threshold_update) {
+		/* Start TM system, post update */
+		CU_ASSERT_FATAL(odp_tm_start(odp_tm_systems[0]) == 0);
+	}
+	return ret;
 }
 
 static int test_threshold(const char *threshold_name,
@@ -3049,6 +3143,7 @@ static int set_queue_wred(odp_tm_queue_t   tm_queue,
 {
 	odp_tm_wred_params_t wred_params;
 	odp_tm_wred_t        wred_profile;
+	int rc;
 
 	odp_tm_wred_params_init(&wred_params);
 	if (use_dual_slope) {
@@ -3065,6 +3160,13 @@ static int set_queue_wred(odp_tm_queue_t   tm_queue,
 
 	wred_params.enable_wred       = true;
 	wred_params.use_byte_fullness = use_byte_fullness;
+
+	if (!dynamic_wred_update) {
+		/* Stop TM system before update when dynamic update is not
+		 * supported.
+		 */
+		CU_ASSERT_FATAL(odp_tm_stop(odp_tm_systems[0]) == 0);
+	}
 
 	/* First see if a wred profile already exists with this name, in
 	 * which case we use that profile, else create a new one. */
@@ -3084,7 +3186,14 @@ static int set_queue_wred(odp_tm_queue_t   tm_queue,
 		}
 	}
 
-	return odp_tm_queue_wred_config(tm_queue, pkt_color, wred_profile);
+	rc = odp_tm_queue_wred_config(tm_queue, pkt_color, wred_profile);
+
+	if (!dynamic_wred_update) {
+		/* Start TM system, post update */
+		CU_ASSERT_FATAL(odp_tm_start(odp_tm_systems[0]) == 0);
+	}
+	return rc;
+
 }
 
 static int test_byte_wred(const char      *wred_name,
@@ -3930,6 +4039,17 @@ static void traffic_mngr_test_thresholds(void)
 				 0,  6400) == 0);
 }
 
+static int traffic_mngr_check_byte_wred(void)
+{
+	/* Cannot run this test without dynamic shaper update as shaper update
+	 * is performed while traffic is in pipeline and pkt shouldn't be
+	 * dropped.
+	 */
+	if (!dynamic_shaper_update)
+		return ODP_TEST_INACTIVE;
+	return ODP_TEST_ACTIVE;
+}
+
 static void traffic_mngr_test_byte_wred(void)
 {
 	if (!tm_capabilities.tm_queue_wred_supported) {
@@ -3951,6 +4071,17 @@ static void traffic_mngr_test_byte_wred(void)
 	CU_ASSERT(test_byte_wred("byte_wred_40G", "byte_bw_40G",
 				 "byte_thresh_40G", "node_1_3_1", 1,
 				 ODP_PACKET_GREEN, TM_PERCENT(30), false) == 0);
+}
+
+static int traffic_mngr_check_pkt_wred(void)
+{
+	/* Cannot run this test without dynamic shaper update as shaper update
+	 * is performed while traffic is in pipeline and pkt shouldn't be
+	 * dropped.
+	 */
+	if (!dynamic_shaper_update)
+		return ODP_TEST_INACTIVE;
+	return ODP_TEST_ACTIVE;
 }
 
 static void traffic_mngr_test_pkt_wred(void)
@@ -3992,6 +4123,17 @@ static void traffic_mngr_test_pkt_wred(void)
 			   ODP_PACKET_RED,    TM_PERCENT(70), true);
 	if (odp_cunit_ret(rc) != 0)
 		CU_FAIL("70Y test failed\n");
+}
+
+static int traffic_mngr_check_query(void)
+{
+	/* Cannot run this test without dynamic shaper update as shaper update
+	 * is performed while traffic is in pipeline and pkt shouldn't be
+	 * dropped.
+	 */
+	if (!dynamic_shaper_update)
+		return ODP_TEST_INACTIVE;
+	return ODP_TEST_ACTIVE;
 }
 
 static void traffic_mngr_test_query(void)
@@ -4073,9 +4215,12 @@ odp_testinfo_t traffic_mngr_suite[] = {
 	ODP_TEST_INFO_CONDITIONAL(traffic_mngr_test_scheduler,
 				  traffic_mngr_check_scheduler),
 	ODP_TEST_INFO(traffic_mngr_test_thresholds),
-	ODP_TEST_INFO(traffic_mngr_test_byte_wred),
-	ODP_TEST_INFO(traffic_mngr_test_pkt_wred),
-	ODP_TEST_INFO(traffic_mngr_test_query),
+	ODP_TEST_INFO_CONDITIONAL(traffic_mngr_test_byte_wred,
+				  traffic_mngr_check_byte_wred),
+	ODP_TEST_INFO_CONDITIONAL(traffic_mngr_test_pkt_wred,
+				  traffic_mngr_check_pkt_wred),
+	ODP_TEST_INFO_CONDITIONAL(traffic_mngr_test_query,
+				  traffic_mngr_check_query),
 	ODP_TEST_INFO(traffic_mngr_test_marking),
 	ODP_TEST_INFO(traffic_mngr_test_fanin_info),
 	ODP_TEST_INFO(traffic_mngr_test_destroy),
