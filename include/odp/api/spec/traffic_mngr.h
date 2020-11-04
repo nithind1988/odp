@@ -605,6 +605,36 @@ odp_tm_t odp_tm_find(const char            *name,
  */
 int odp_tm_capability(odp_tm_t odp_tm, odp_tm_capabilities_t *capabilities);
 
+/** Start a TM system.
+ *
+ * odp_tm_start() needs to be used to start an already created / found TM system
+ * By default, all the TM systems are in stopped state.
+ * Calling this function on an already started TM system will be ignored.
+ *
+ * @param odp_tm  The odp_tm_t value of the TM system to be started.
+ * @return        0 upon success, < 0 upon failure.
+ */
+int odp_tm_start(odp_tm_t odp_tm);
+
+/** Stop a TM system.
+ *
+ * odp_tm_stop() can to be used to stop a TM system that is already started.
+ * Stopping a TM system will cause it to stop / pause processing packets and
+ * become idle.
+ *
+ * When TM is in the stopped state, new packets sent to the TM (directly or
+ * indirectly) may get silently dropped or may get transmitted without TM
+ * treatment or the sending operation may fail. Packets already stored for
+ * transmit are not freed.
+ *
+ * A following call to odp_tm_start() restarts TM system and its scheduling/shaping
+ * on existing and new packets.
+ *
+ * @param odp_tm  The odp_tm_t value of the TM system to be stopped.
+ * @return        0 upon success, < 0 upon failure.
+ */
+int odp_tm_stop(odp_tm_t odp_tm);
+
 /** Destroy a TM system.
  *
  * odp_tm_destroy() may be used to destroy TM systems created via
