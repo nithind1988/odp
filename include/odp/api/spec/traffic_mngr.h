@@ -244,6 +244,10 @@ typedef struct {
 	 * When true the min_weight and max_weight fields above specify
 	 * the legal range of such weights. */
 	odp_bool_t weights_supported;
+
+	/** tm_node_threshold indicates that the tm_nodes at this
+	 * level support threshold profiles. */
+	odp_bool_t tm_node_threshold;
 } odp_tm_level_capabilities_t;
 
 /** The tm_pkt_prio_mode_t enumeration type is used to indicate different
@@ -379,6 +383,24 @@ typedef struct {
 	 * only as many number of WFQ groups as number of priorities.
 	 */
 	uint8_t max_wfq_groups_per_node;
+
+	/** tm_queue_threshold indicates support for threshold profile on a
+	 * TM queue. When TRUE, users can set/clear/update threshold profile
+	 * on a TM queue. When false clear none of it is supported.
+	 */
+	odp_bool_t tm_queue_threshold;
+
+	/** tm_queue_query_flags indicates supported types of TM queue query.
+	 * Types of TM queue query are same as query_flags that are passed to
+	 * odp_tm_queue_query(), odp_tm_priority_query() and
+	 * odp_tm_total_query(). When zero, none of the queue query API's are
+	 * supported. When non-zero, only the only supported types of passed
+	 * query_flags are taken into account and corresponding fields updated.
+	 *
+	 * @see ODP_TM_QUERY_PKT_CNT, ODP_TM_QUERY_BYTE_CNT,
+	 * ODP_TM_QUERY_THRESHOLDS.
+	 */
+	uint32_t tm_queue_query_flags;
 } odp_tm_capabilities_t;
 
 /** Per Level Requirements
@@ -436,6 +458,10 @@ typedef struct {
 	 * fanins.  When true the min_weight and max_weight fields above
 	 * specify the used range of such weights. */
 	odp_bool_t weights_needed;
+
+	/** tm_node_threshold_needed indicates that the tm_nodes at this
+	 * level may use threshold profile support */
+	odp_bool_t tm_node_threshold_needed;
 } odp_tm_level_requirements_t;
 
 /** TM Requirements Record.
@@ -464,6 +490,10 @@ typedef struct {
 	 * expected to use the dual slope WRED capability.  This field is
 	 * ignored if tm_queue_wred_needed above is false. */
 	odp_bool_t tm_queue_dual_slope_needed;
+
+	/** tm_queue_threshold_needed indicates that the tm_queues are
+	 * expected to use threshold profile support */
+	odp_bool_t tm_queue_threshold_needed;
 
 	/** vlan_marking_needed indicates that the ODP application expects
 	 * to use some form of VLAN egress marking using the
@@ -583,6 +613,41 @@ void odp_tm_egress_init(odp_tm_egress_t *egress);
  */
 int odp_tm_capabilities(odp_tm_capabilities_t capabilities[],
 			uint32_t              capabilities_size);
+
+/** Query All TM Capabilities specific to an egress
+ *
+ * The odp_tm_egress_capabilities() function can be used to obtain the complete
+ * set of TM limits supported by this implementation for a given egress.
+ * The reason that this  returns a SET of capabilities and not just one, is
+ * because it is expected  that many HW based implementations may have one set
+ * of limits for the HW and also support a SW TM implementation with a
+ * (presumably larger) different set of limits.  There are also cases where
+ * there could be more than SW implementation (one supporting say tens of
+ * thousands of tm_queues and a variant supporting tens of millions of
+ * tm_queues). This is needed as platforms might have different constraints
+ * for different egress type and there is no way to know them using
+ * odp_tm_capabilities() provided capabilities. The caller passes in an array
+ * of odp_tm_capabilities_t records  and the number of such records.  Then the
+ * first N of these records will be  filled in by the implementation and the
+ * number N will be returned.  In the event that N is larger than the
+ * capabilities_size, N will still be returned, but only capabilities_size
+ * records will be filled in.
+ *
+ * @param[out] capabilities      An array of odp_tm_capabilities_t records to
+ *                               be filled in.
+ * @param      capabilities_size The number of odp_tm_capabilities_t records
+ *                               in the capabilities array.
+ * @param      egress            Only capabilities compatible with this egress
+ *                               are returned.
+ * @return                       Returns < 0 upon failure.  Returns N > 0,
+ *                               where N is the maximum number of different
+ *                               odp_tm_capabilities_t records that the
+ *                               implementations supports. *NOTE* that this
+ *                               number can be > capabilities_size!
+ */
+int odp_tm_egress_capabilities(odp_tm_capabilities_t capabilities[],
+			       uint32_t              capabilities_size,
+			       odp_tm_egress_t       *egress);
 
 /** Create/instantiate a TM Packet Scheduling system.
  *
