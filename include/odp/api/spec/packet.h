@@ -2150,6 +2150,42 @@ uint32_t odp_packet_payload_offset(odp_packet_t pkt);
  */
 int odp_packet_payload_offset_set(odp_packet_t pkt, uint32_t offset);
 
+/** Packet Tx completion mode */
+typedef enum odp_packet_tx_compl_mode_t {
+	/** Packet Tx completion event is disabled. */
+	ODP_PACKET_TX_COMPL_DISABLED,
+	/** Packet Tx completion event is enabled on all transmitted or dropped pkts */
+	ODP_PACKET_TX_COMPL_ALL_XMIT_OR_DROP,
+} odp_packet_tx_compl_mode_t;
+
+/**
+ * Tx completion request options
+ */
+typedef struct odp_packet_tx_compl_opt_t {
+	/** Queue handle
+	 *
+	 * Tx completion event will be posted to ODP queue identified by this handle.
+	 */
+	odp_queue_t queue;
+
+	/** Packet Tx completion event mode */
+	odp_packet_tx_compl_mode_t mode;
+
+} odp_packet_tx_compl_opt_t;
+
+/**
+  * Request Tx completion event.
+  *
+  * Control whether Tx completion event needs to be enabled or not. When enabled, an event
+  * of type ODP_EVENT_PACKET_TX_COMPL is generated and posted to given odp_queue_t based on mode.
+  *
+  * @param pkt     Packet handle
+  * @param opt     Pointer to options providing info for Tx completion event generation
+  *                such as queue to post event to, when to generate event, etc.
+  *                By default Tx completion generation for a packet is disabled.
+  */
+void odp_packet_tx_compl_request(odp_packet_t pkt, const odp_packet_tx_compl_opt_t *opt);
+
 /*
  *
  * Packet vector handling routines
