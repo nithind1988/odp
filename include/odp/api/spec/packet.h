@@ -2140,6 +2140,50 @@ uint32_t odp_packet_payload_offset(odp_packet_t pkt);
  */
 int odp_packet_payload_offset_set(odp_packet_t pkt, uint32_t offset);
 
+/**
+ * Enable or disable Tx packet drop based on age
+ *
+ * Enable or disable Tx packet drop based on packet age. When enabled, packet will be dropped
+ * if it is in Tx pktout queue for longer than per-packet timeout.
+ *
+ * @param pkt     Packet handle
+ * @param enable  True indicates aging to be enabled on the packet.
+ */
+void odp_packet_aging_drop_set(odp_packet_t pkt, odp_bool_t enable);
+
+/**
+ * Set Tx packet aging timeout
+ *
+ * Set a packet aging timeout in nsec which limits the age of packet in pktout queue or
+ * traffic scheduler/shapers. Packet exceeding its timeout will be dropped when packet aging
+ * drop is enabled.
+ *
+ * @param pkt     Packet handle
+ * @param tmo_ns  Timeout to age in nsec
+ *
+ * @see odp_pktio_capability_t::max_tx_aging_tmo_ns
+ */
+void odp_packet_aging_tmo_set(odp_packet_t pkt, uint64_t tmo_ns);
+
+/**
+ * Check if packet has Tx aging drop enabled
+ *
+ * @param pkt Packet handle
+ *
+ * @retval 1 if aging drop is enabled
+ * @retval 0 if aging drop is disabled
+ */
+int odp_packet_has_aging_drop(odp_packet_t pkt);
+
+/**
+ * Get packet aging drop timeout set for the packet
+ *
+ * @param pkt Packet handle
+ *
+ * @return Timeout in nsec set for packet aging drop
+ */
+uint64_t odp_packet_aging_tmo(odp_packet_t pkt);
+
 /*
  *
  * Packet vector handling routines
