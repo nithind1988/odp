@@ -2150,6 +2150,49 @@ uint32_t odp_packet_payload_offset(odp_packet_t pkt);
  */
 int odp_packet_payload_offset_set(odp_packet_t pkt, uint32_t offset);
 
+/** Packet Tx completion mode */
+typedef enum odp_packet_tx_compl_mode_t {
+	/** Packet Tx completion event is disabled
+	 *
+	 * When mode is disabled, all other fields of odp_packet_tx_compl_opt_t are ignored.
+	 */
+	ODP_PACKET_TX_COMPL_DISABLED,
+	/** Packet Tx completion event is sent for all packets (both transmitted and dropped) */
+	ODP_PACKET_TX_COMPL_ALL,
+} odp_packet_tx_compl_mode_t;
+
+/**
+ * Tx completion request options
+ */
+typedef struct odp_packet_tx_compl_opt_t {
+	/** Queue handle
+	 *
+	 * Tx completion event will be posted to ODP queue identified by this handle.
+	 */
+	odp_queue_t queue;
+
+	/** Packet Tx completion event mode */
+	odp_packet_tx_compl_mode_t mode;
+
+} odp_packet_tx_compl_opt_t;
+
+/**
+  * Request Tx completion event.
+  *
+  * Enables or disables TX completion event request for the packet. When
+  * enabled, an event of type ODP_EVENT_PACKET_TX_COMPL will be sent to the
+  * destination queue based on the TX completion mode. The event is sent only
+  * after pktio interface has finished processing the packet. A previously
+  * enabled request can be disabled by setting the mode to
+  * ODP_PACKET_TX_COMPL_DISABLED.
+  *
+  * TX completion event request is disabled by default.
+  *
+  * @param pkt     Packet handle
+  * @param opt     Points to TX completion event generation options
+  */
+void odp_packet_tx_compl_request(odp_packet_t pkt, const odp_packet_tx_compl_opt_t *opt);
+
 /*
  *
  * Packet vector handling routines
