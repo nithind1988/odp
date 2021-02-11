@@ -2150,6 +2150,21 @@ uint32_t odp_packet_payload_offset(odp_packet_t pkt);
  */
 int odp_packet_payload_offset_set(odp_packet_t pkt, uint32_t offset);
 
+/**
+  * Request Tx completion event.
+  *
+  * Control whether Tx completion event needs to be enabled or not. When enabled, an event
+  * of type ODP_EVENT_PACKET_TX_COMPL is generated and posted to given odp_queue_t after packet
+  * reaches terminal state i.e either transmit or drop.
+  *
+  * @param pkt     Packet handle
+  * @param queue   Queue to enqueue the completion event.
+  * @param enable  0: Packet Tx completion event generation is disabled.
+  *                1: Packet Tx completion event generation is enabled.
+  *                By default Tx completion generation for a packet is disabled.
+  */
+void odp_packet_tx_completion_request(odp_packet_t pkt, odp_queue_t queue, int enable);
+
 /*
  *
  * Packet vector handling routines
