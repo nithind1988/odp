@@ -2368,6 +2368,33 @@ odp_packet_tx_compl_t odp_packet_tx_compl_from_event(odp_event_t ev);
   */
 odp_event_t odp_packet_tx_compl_to_event(odp_packet_tx_compl_t tx_compl);
 
+/**
+ * Free packet Tx completion
+ *
+ * Frees the packet Tx completion back to platform. It frees packet Tx
+ * completion that gets allocated as part of packet Tx completion request
+ * for a given packet.
+ *
+ * @param tx_compl Packet Tx completion handle
+ *
+ * @see odp_packet_tx_completion_request()
+ */
+void odp_packet_tx_compl_free(odp_packet_tx_compl_t tx_compl);
+
+/**
+ * User context pointer
+ *
+ * Return user context pointer from packet Tx completion event.
+ * This is the same value set to packet using odp_packet_user_ptr_set().
+ *
+ * @param tx_compl  Packet Tx completion handle
+ *
+ * @return User context pointer
+ *
+ * @see odp_packet_user_ptr_set()
+ */
+void *odp_packet_tx_compl_user_ptr(odp_packet_tx_compl_t tx_compl);
+
 /*
  *
  * Debugging
