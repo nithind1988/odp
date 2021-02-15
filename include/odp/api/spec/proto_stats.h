@@ -72,6 +72,15 @@ typedef struct odp_proto_stats_capability_t {
 	 * when that proto stats id is supported.
 	 */
 	uint64_t stats_mask_supported;
+
+	/** ODP_PROTO_STATS_ID_TX_* flags */
+	struct {
+		/** Packet adjust support for ODP_PROTO_STATS_ID_TX_OCT_COUNT0 */
+		odp_bool_t oct_count0_adj;
+
+		/** Packet adjust support for ODP_PROTO_STATS_ID_TX_OCT_COUNT1 */
+		odp_bool_t oct_count1_adj;
+	} tx;
 } odp_proto_stats_capability_t;
 
 /**
