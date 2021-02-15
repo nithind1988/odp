@@ -72,6 +72,57 @@ typedef struct odp_proto_stats_capability_t {
 	 * when that proto stats id is supported.
 	 */
 	uint64_t stats_mask_supported;
+
+	/** ODP_PROTO_STATS_ID_TX_* flags */
+	struct {
+		/** Packet adjust support for ODP_PROTO_STATS_ID_TX_OCT_COUNT0
+		 *
+		 * By default octet counter is updated using `pkt_len`. When adjust is supported
+		 * and octet count updated in statistics is `pkt_len + OCT_COUNT0_ADJ` where
+		 * `OCT_COUNT0_ADJ` is set using odp_packet_proto_stats_oct_set().
+		 * `pkt_len` that is referred to here is Transmit packet length at the
+		 * time of the final packet transmit or drop.
+		 *
+		 * @see odp_packet_proto_stats_oct_set()
+		 */
+		odp_bool_t oct_count0_adj;
+
+		/** Per-Packet enable/disable for ODP_PROTO_STATS_ID_TX_OCT_COUNT0
+		 *
+		 * Normally when proto stats object is created with
+		 * ODP_PROTO_STATS_ID_TX_OCT_COUNT0, octet counter 0 updates are enabled for packets
+		 * associated with stats object. This capability says if additionally octet
+		 * counter 0 update alone can be disabled for this packet while keeping all other
+		 * updates enabled.
+		 *
+		 * @see odp_packet_proto_stats_oct_set()
+		 */
+		odp_bool_t oct_count0_ctrl;
+
+		/** Packet adjust support for ODP_PROTO_STATS_ID_TX_OCT_COUNT1
+		 *
+		 * By default octet counter is updated using `pkt_len`. When adjust is supported
+		 * and octet count updated in statistics is `pkt_len + OCT_COUNT1_ADJ` where
+		 * `OCT_COUNT1_ADJ` is set using odp_packet_proto_stats_oct_set().
+		 * `pkt_len` that is referred to here is Transmit packet length at the
+		 * time of the final packet transmit or drop.
+		 *
+		 * @see odp_packet_proto_stats_oct_set()
+		 */
+		odp_bool_t oct_count1_adj;
+
+		/** Per-Packet enable/disable control for ODP_PROTO_STATS_ID_TX_OCT_COUNT1
+		 *
+		 * Normally when proto stats object is created with
+		 * ODP_PROTO_STATS_ID_TX_OCT_COUNT1, octet counter 1 updates are enabled for packets
+		 * associated with stats object. This capability says if additionally octet
+		 * counter 1 update alone be disabled for this packet alone using
+		 * odp_packet_proto_stats_oct_set().
+		 *
+		 * @see odp_packet_proto_stats_oct_set()
+		 */
+		odp_bool_t oct_count1_ctrl;
+	} tx;
 } odp_proto_stats_capability_t;
 
 /**

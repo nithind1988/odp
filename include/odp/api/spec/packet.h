@@ -19,6 +19,7 @@
 extern "C" {
 #endif
 
+#include <odp/api/proto_stats.h>
 #include <odp/api/time.h>
 
 /** @defgroup odp_packet ODP PACKET
@@ -2289,6 +2290,60 @@ int odp_packet_tx_compl_request(odp_packet_t pkt, const odp_packet_tx_compl_opt_
  * @retval 0         TX completion event is not requested
  */
 int odp_packet_has_tx_compl_request(odp_packet_t pkt);
+
+/**
+ * Set proto stats object.
+ *
+ * Associate a packet with a proto stats object. The statistics enabled in the proto stats
+ * object are updated for the packet in packet output when the packet is transmitted or
+ * dropped. The statistics update is done as the last step of output processing after possible
+ * packet transformations (e.g. fragmentation, IPsec) that may occur. If a packet is fragmented
+ * or segmented to multiple packets as part of output processing, all the resulting packets
+ * inherit the proto stats object association from the original packet.
+ *
+ * @param pkt   Packet handle
+ * @param stat  Proto stats object handle. If ODP_PROTO_STATS_INVALID is set,
+ *              then proto stats update is disabled for this packet.
+ */
+void odp_packet_proto_stats_set(odp_packet_t pkt, odp_proto_stats_t stat);
+
+/**
+ * Get proto stats object.
+ *
+ * Get the proto stats object associated with the given packet.
+ *
+ * @param pkt Packet handle
+ *
+ * @return Proto stats object handle or ODP_PROTO_STATS_INVALID if not set.
+ */
+odp_proto_stats_t odp_packet_proto_stats(odp_packet_t pkt);
+
+/**
+ * Set packet proto stats octet adjust length and enable/disable.
+ *
+ * Set signed adjust length value that will be added to `odp_packet_len()` before
+ * updating octet counter in proto stats object. By default adjust value will be
+ * zero and octet counter update is enabled. In other words,
+ *
+ * if (sent)
+ *    counter[ODP_PROTO_STATS_ID_TX_OCT_COUNTx] += `odp_packet_len() + adjust`
+ * else if (drop)
+ *    counter[ODP_PROTO_STATS_ID_TX_OCT_COUNTx_DROP] += `odp_packet_len() + adjust`
+ *
+ * @param pkt      Packet handle
+ * @param counter  Octet counter index.
+ * @param adjust   Octet adjust value.
+ * @param disable  1: Octet counter update is disabled.
+ *                 0: Octet counter update is enabled.
+ *                 If per-packet octet counter enable/disable is not supported,
+ *                 this field is ignored.
+ *
+ * @see odp_proto_stats_capa_t::tx::oct_count0_adj
+ * @see odp_proto_stats_capa_t::tx::oct_count1_adj
+ * @see odp_proto_stats_capa_t::tx::oct_count0_ctrl
+ * @see odp_proto_stats_capa_t::tx::oct_count1_ctrl
+ */
+void odp_packet_proto_stats_oct_set(odp_packet_t pkt, uint8_t counter, int adjust, int disable);
 
 /*
  *
