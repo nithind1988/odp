@@ -27,6 +27,29 @@ extern "C" {
 
 /** ODP proto stats id */
 typedef enum odp_proto_stats_id_t {
+	/** Tx proto stats id ODP_PROTO_STATS_ID_TX_*
+	 *
+	 * - Statistics that can be enabled in proto stats objects for Tx of a packet via
+	 *   Packet IO. Packet IO pktout config `odp_pktout_config_opt_t::bit::proto_stats_ena`
+	 *   needs to be enabled for the offload to work.
+	 *
+	 * - Tx packet and octet sent/drop statistics might include packets sent/dropped via
+	 *   Traffic Manager or Tx packet Aging or due to any other Tx errors. It is
+	 *   implementation specific as to what all Tx sent/drop events are accounted for.
+	 */
+
+	/** Packet sent count */
+	ODP_PROTO_STATS_ID_TX_PKT,
+	/** Packet drop count */
+	ODP_PROTO_STATS_ID_TX_PKT_DROP,
+	/** Packet sent Octet counter 0 */
+	ODP_PROTO_STATS_ID_TX_OCT_COUNT0,
+	/** Packet drop Octet counter 0 */
+	ODP_PROTO_STATS_ID_TX_OCT_COUNT0_DROP,
+	/** Packet sent octet counter 1 */
+	ODP_PROTO_STATS_ID_TX_OCT_COUNT1,
+	/** Packet drop octet counter 1 */
+	ODP_PROTO_STATS_ID_TX_OCT_COUNT1_DROP,
 	/** Max */
 	ODP_PROTO_STATS_ID_MAX,
 } odp_proto_stats_id_t;
@@ -103,6 +126,13 @@ odp_proto_stats_t odp_proto_stats_lookup(const char *name);
  * Destroy a proto stats object
  *
  * Destroy a proto stats object already created.
+ *
+ * - Before destroying proto stats object having ODP_PROTO_STATS_ID_TX_*
+ *   enabled, for all PKTIO devices to which packets were Tx'ed earlier with
+ *   this proto stats object, odp_pktio_stop() must be called. Additionally,
+ *   existing packets that refer to the proto stats object being destroyed
+ *   must not be sent at the same time as or after the proto stats object
+ *   destruction.
  *
  * @param stat Proto stats handle
  *
