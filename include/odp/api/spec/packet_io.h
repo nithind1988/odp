@@ -24,6 +24,7 @@ extern "C" {
 #include <odp/api/queue.h>
 #include <odp/api/time.h>
 #include <odp/api/packet.h>
+#include <odp/api/proto_stats.h>
 
 /** @defgroup odp_packet_io ODP PACKET IO
  *  Packet IO interfaces.
@@ -488,6 +489,9 @@ typedef union odp_pktout_config_opt_t {
 		 *    interface.
 		 */
 		uint64_t no_packet_refs  : 1;
+
+		/** Enable packet protocol stats update */
+		uint64_t proto_stats : 1;
 
 	} bit;
 
