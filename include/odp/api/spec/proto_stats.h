@@ -25,14 +25,67 @@ extern "C" {
  * Invalid proto stats handle
  */
 
+/** ODP proto statistics opt for Tx
+ *
+ * Statistics that can be enabled in proto stats objects for Tx of a packet via
+ * Packet IO. Pktout config `odp_pktout_config_opt_t::bit::proto_stats_ena`
+ * needs to be enabled for the offload to work.
+ *
+ * Tx packet and octet sent/drop statistics might include packets sent/dropped via
+ * Traffic Manager or Tx packet Aging or due to any other Tx errors. It is
+ * implementation specific as to what all Tx sent/drop events are accounted for.
+ */
+typedef union odp_proto_stats_tx_opt_t {
+	/** Option flags */
+	struct {
+		/** Packet sent count */
+		int64_t pkts : 1;
+
+		/** Packet drop count */
+		uint64_t pkt_drops : 1;
+
+		/** Packet sent Octet counter 0 */
+		uint64_t oct_count0 : 1;
+
+		/** Packet drop Octet counter 0 */
+		uint64_t oct_count0_drop : 1;
+
+		/** Packet sent octet counter 1 */
+		uint64_t oct_count1 : 1;
+
+		/** Packet drop octet counter 1 */
+		uint64_t oct_count1_drop : 1;
+	} bit;
+
+	/** All bits of the bit field structure
+	 *
+	 * This field can be used to set/clear all flags, or bitwise
+	 * operations over the entire structure.
+	 */
+	uint64_t all_bits;
+} odp_proto_stats_tx_opt_t;
+
 /** ODP proto stats params */
 typedef struct odp_proto_stats_param_t {
+	/** Stats options for Tx */
+	odp_proto_stats_tx_opt_t tx_opt;
 } odp_proto_stats_param_t;
 
 /**
  * Proto stats capabilities
  */
 typedef struct odp_proto_stats_capability_t {
+	/** Tx capabilities */
+	struct {
+		/** Tx stats supported */
+		odp_proto_stats_tx_opt_t opt;
+
+		/** Packet adjust support for Octet counter 0 */
+		odp_bool_t oct_count0_adj;
+
+		/** Packet adjust support for Octet counter 1 */
+		odp_bool_t oct_count1_adj;
+	} tx;
 } odp_proto_stats_capability_t;
 
 /**
@@ -84,6 +137,13 @@ odp_proto_stats_t odp_proto_stats_lookup(const char *name);
  *
  * Destroy a proto stats object already created.
  *
+ * Before destroying proto stats object having ODP_PROTO_STATS_ID_TX_*
+ * enabled, for all PKTIO devices to which packets were Tx'ed earlier with
+ * this proto stats object, odp_pktio_stop() must be called. Additionally,
+ * existing packets that refer to the proto stats object being destroyed
+ * must not be sent at the same time as or after the proto stats object
+ * destruction.
+ *
  * @param stat Proto stats handle
  *
  * @retval 0 on success
@@ -93,6 +153,23 @@ int odp_proto_stats_destroy(odp_proto_stats_t stat);
 
 /** ODP proto stats counters */
 typedef struct odp_proto_stats_data_t {
+	/** Packet sent count */
+	uint64_t tx_pkts;
+
+	/** Packet drop count */
+	uint64_t tx_pkt_drops;
+
+	/** Packet sent Octet counter 0 */
+	uint64_t tx_oct_count0;
+
+	/** Packet drop Octet counter 0 */
+	uint64_t tx_oct_count0_drops;
+
+	/** Packet sent octet counter 1 */
+	uint64_t tx_oct_count1;
+
+	/** Packet drop octet counter 1 */
+	uint64_t tx_oct_count1_drops;
 } odp_proto_stats_data_t;
 
 /**
