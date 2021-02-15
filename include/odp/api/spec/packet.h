@@ -19,6 +19,7 @@
 extern "C" {
 #endif
 
+#include <odp/api/proto_stats.h>
 #include <odp/api/time.h>
 
 /** @defgroup odp_packet ODP PACKET
@@ -2139,6 +2140,57 @@ uint32_t odp_packet_payload_offset(odp_packet_t pkt);
  * @retval <0 on failure
  */
 int odp_packet_payload_offset_set(odp_packet_t pkt, uint32_t offset);
+
+/**
+ * Set proto stats object.
+ *
+ * Associate a proto stats object to a packet. This enables updating protocol
+ * stats of the packet in the given object after packet is enqueued to queue
+ * and reaches a terminal state i.e either transmit or drop.
+ *
+ * @param pkt   Packet handle
+ * @param stat  Proto stats object handle. If ODP_PROTO_STATS_INVALID is set,
+ *              then proto stats update is disabled for this packet.
+ */
+void odp_packet_proto_stats_set(odp_packet_t pkt, odp_proto_stats_t stat);
+
+/**
+ * Get proto stats object.
+ *
+ * Get the proto stats object associated with the given packet.
+ *
+ * @param pkt Packet handle
+ *
+ * @return Proto stats object handle or ODP_PROTO_STATS_INVALID if not set.
+ */
+odp_proto_stats_t odp_packet_proto_stats(odp_packet_t pkt);
+
+/**
+ * Set packet proto stats octet adjust length and enable/disable.
+ *
+ * Set signed adjust length value that will be added to `odp_packet_len()` before
+ * updating octet counter in proto stats object. By default adjust value will be
+ * zero and octet counter update is enabled. In other words,
+ *
+ * if (sent)
+ *    counter[ODP_PROTO_STATS_ID_TX_OCT_COUNTx] += `odp_packet_len() + adjust`
+ * else if (drop)
+ *    counter[ODP_PROTO_STATS_ID_TX_OCT_COUNTx_DROP] += `odp_packet_len() + adjust`
+ *
+ * @param pkt      Packet handle
+ * @param counter  Non-zero counter index when more than 1 octet counter is supported.
+ * @param adjust   Octet adjust value.
+ * @param disable  1: Octet counter update is disabled.
+ *                 0: Octet counter update is enabled.
+ *                 If per-packet octet counter enable/disable is not supported,
+ *                 this field is ignored.
+ *
+ * @see odp_proto_stats_capa_t::tx::oct_count0_adj
+ * @see odp_proto_stats_capa_t::tx::oct_count1_adj
+ * @see odp_proto_stats_capa_t::tx::oct_count0_ctrl
+ * @see odp_proto_stats_capa_t::tx::oct_count1_ctrl
+ */
+void odp_packet_proto_stats_oct_set(odp_packet_t pkt, uint8_t counter, int adjust, int disable);
 
 /*
  *
