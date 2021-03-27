@@ -22,6 +22,7 @@
 #include <odp/api/std_types.h>
 #include <protocols/eth.h>
 #include <protocols/ip.h>
+#include <odp_packet_io_internal.h>
 #include <odp_traffic_mngr_internal.h>
 #include <odp/api/plat/packet_inlines.h>
 #include <odp/api/plat/byteorder_inlines.h>
@@ -2918,9 +2919,11 @@ odp_tm_t odp_tm_create(const char            *name,
 	/* If we are using pktio output (usual case) get the first associated
 	 * pktout_queue for this pktio and fail if there isn't one.
 	 */
-	if (egress->egress_kind == ODP_TM_EGRESS_PKT_IO &&
-	    odp_pktout_queue(egress->pktio, &pktout, 1) != 1)
-		return ODP_TM_INVALID;
+	if (egress->egress_kind == ODP_TM_EGRESS_PKT_IO) {
+		rc = _odp_pktio_pktout_tm_config(egress->pktio, &pktout);
+		if (rc)
+			return ODP_TM_INVALID;
+	}
 
 	/* Allocate tm_system_t record. */
 	odp_ticketlock_lock(&tm_glb->create_lock);
