@@ -2542,8 +2542,8 @@ void odp_tm_egress_init(odp_tm_egress_t *egress)
 	memset(egress, 0, sizeof(odp_tm_egress_t));
 }
 
-int odp_tm_capabilities(odp_tm_capabilities_t capabilities[],
-			uint32_t              capabilities_size)
+static int tm_capabilities(odp_tm_capabilities_t capabilities[],
+			   uint32_t              capabilities_size)
 {
 	odp_tm_level_capabilities_t *per_level_cap;
 	odp_tm_capabilities_t       *cap_ptr;
@@ -2599,6 +2599,12 @@ int odp_tm_capabilities(odp_tm_capabilities_t capabilities[],
 	return 1;
 }
 
+int ODP_DEPRECATE(odp_tm_capabilities)(odp_tm_capabilities_t capabilities[],
+				       uint32_t              capabilities_size)
+{
+	return tm_capabilities(capabilities, capabilities_size);
+}
+
 int odp_tm_egress_capabilities(odp_tm_capabilities_t *capabilities,
 			       const odp_tm_egress_t *egress)
 {
@@ -2606,7 +2612,7 @@ int odp_tm_egress_capabilities(odp_tm_capabilities_t *capabilities,
 
 	(void)egress;
 
-	ret = odp_tm_capabilities(capabilities, 1);
+	ret = tm_capabilities(capabilities, 1);
 	if (ret <= 0)
 		return -1;
 	return 0;
