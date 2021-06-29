@@ -2548,8 +2548,8 @@ void odp_tm_egress_init(odp_tm_egress_t *egress)
 	memset(egress, 0, sizeof(odp_tm_egress_t));
 }
 
-int odp_tm_capabilities(odp_tm_capabilities_t capabilities[] ODP_UNUSED,
-			uint32_t              capabilities_size)
+static int tm_capabilities(odp_tm_capabilities_t capabilities[],
+			   uint32_t              capabilities_size)
 {
 	odp_tm_level_capabilities_t *per_level_cap;
 	odp_tm_capabilities_t       *cap_ptr;
@@ -2571,6 +2571,10 @@ int odp_tm_capabilities(odp_tm_capabilities_t capabilities[] ODP_UNUSED,
 	cap_ptr->vlan_marking_supported        = true;
 	cap_ptr->ecn_marking_supported         = true;
 	cap_ptr->drop_prec_marking_supported   = true;
+	cap_ptr->tm_queue_threshold            = true;
+	cap_ptr->tm_queue_query_flags          = (ODP_TM_QUERY_PKT_CNT |
+						  ODP_TM_QUERY_BYTE_CNT |
+						  ODP_TM_QUERY_THRESHOLDS);
 	cap_ptr->max_schedulers_per_node       = ODP_TM_MAX_PRIORITIES;
 
 	cap_ptr->dynamic_topology_update  = true;
@@ -2599,9 +2603,25 @@ int odp_tm_capabilities(odp_tm_capabilities_t capabilities[] ODP_UNUSED,
 		per_level_cap->tm_node_dual_slope_supported = true;
 		per_level_cap->fair_queuing_supported       = true;
 		per_level_cap->weights_supported            = true;
+		per_level_cap->tm_node_threshold            = true;
 	}
 
 	return 1;
+}
+
+int odp_tm_capabilities(odp_tm_capabilities_t capabilities[],
+			uint32_t              capabilities_size)
+{
+	return tm_capabilities(capabilities, capabilities_size);
+}
+
+int odp_tm_egress_capabilities(odp_tm_capabilities_t capabilities[],
+			       uint32_t capabilities_size,
+			       odp_tm_egress_t *egress)
+{
+	(void)egress;
+
+	return tm_capabilities(capabilities, capabilities_size);
 }
 
 static void tm_system_capabilities_set(odp_tm_capabilities_t *cap_ptr,
@@ -2611,7 +2631,7 @@ static void tm_system_capabilities_set(odp_tm_capabilities_t *cap_ptr,
 	odp_tm_level_capabilities_t *per_level_cap;
 	odp_packet_color_t           color;
 	odp_bool_t                   shaper_supported, wred_supported;
-	odp_bool_t                   dual_slope;
+	odp_bool_t                   dual_slope, threshold;
 	uint32_t                     num_levels, level_idx, max_nodes;
 	uint32_t                     max_queues, max_fanin;
 	uint8_t                      max_priority, min_weight, max_weight;
@@ -2624,6 +2644,7 @@ static void tm_system_capabilities_set(odp_tm_capabilities_t *cap_ptr,
 	shaper_supported = req_ptr->tm_queue_shaper_needed;
 	wred_supported   = req_ptr->tm_queue_wred_needed;
 	dual_slope       = req_ptr->tm_queue_dual_slope_needed;
+	threshold        = req_ptr->tm_queue_threshold_needed;
 
 	cap_ptr->max_tm_queues                 = max_queues;
 	cap_ptr->max_levels                    = num_levels;
@@ -2634,6 +2655,10 @@ static void tm_system_capabilities_set(odp_tm_capabilities_t *cap_ptr,
 	cap_ptr->ecn_marking_supported         = req_ptr->ecn_marking_needed;
 	cap_ptr->drop_prec_marking_supported   =
 					req_ptr->drop_prec_marking_needed;
+	cap_ptr->tm_queue_threshold            = threshold;
+	cap_ptr->tm_queue_query_flags          = (ODP_TM_QUERY_PKT_CNT |
+						  ODP_TM_QUERY_BYTE_CNT |
+						  ODP_TM_QUERY_THRESHOLDS);
 	cap_ptr->max_schedulers_per_node       = ODP_TM_MAX_PRIORITIES;
 
 	cap_ptr->dynamic_topology_update  = true;
@@ -2665,6 +2690,7 @@ static void tm_system_capabilities_set(odp_tm_capabilities_t *cap_ptr,
 		shaper_supported = per_level_req->tm_node_shaper_needed;
 		wred_supported   = per_level_req->tm_node_wred_needed;
 		dual_slope       = per_level_req->tm_node_dual_slope_needed;
+		threshold        = per_level_req->tm_node_threshold_needed;
 
 		per_level_cap->max_num_tm_nodes   = max_nodes;
 		per_level_cap->max_fanin_per_node = max_fanin;
@@ -2677,6 +2703,7 @@ static void tm_system_capabilities_set(odp_tm_capabilities_t *cap_ptr,
 		per_level_cap->tm_node_dual_slope_supported = dual_slope;
 		per_level_cap->fair_queuing_supported       = true;
 		per_level_cap->weights_supported            = true;
+		per_level_cap->tm_node_threshold            = threshold;
 	}
 }
 
