@@ -2548,6 +2548,8 @@ odp_bool_t odp_tm_is_idle(odp_tm_t odp_tm)
 void odp_tm_requirements_init(odp_tm_requirements_t *requirements)
 {
 	memset(requirements, 0, sizeof(odp_tm_requirements_t));
+
+	requirements->pkt_prio_mode = ODP_TM_PKT_PRIO_MODE_PRESERVE;
 }
 
 void odp_tm_egress_init(odp_tm_egress_t *egress)
@@ -2582,12 +2584,16 @@ static int tm_capabilities(odp_tm_capabilities_t capabilities[],
 	cap_ptr->tm_queue_query_flags          = (ODP_TM_QUERY_PKT_CNT |
 						  ODP_TM_QUERY_BYTE_CNT |
 						  ODP_TM_QUERY_THRESHOLDS);
+	cap_ptr->max_schedulers_per_node       = ODP_TM_MAX_PRIORITIES;
 
 	cap_ptr->dynamic_topology_update  = true;
 	cap_ptr->dynamic_shaper_update    = true;
 	cap_ptr->dynamic_sched_update     = true;
 	cap_ptr->dynamic_wred_update      = true;
 	cap_ptr->dynamic_threshold_update = true;
+
+	/* We only support pkt priority mode preserve */
+	cap_ptr->pkt_prio_modes[ODP_TM_PKT_PRIO_MODE_PRESERVE] = true;
 
 	for (color = 0; color < ODP_NUM_PACKET_COLORS; color++)
 		cap_ptr->marking_colors_supported[color] = true;
@@ -2684,12 +2690,15 @@ static void tm_system_capabilities_set(odp_tm_capabilities_t *cap_ptr,
 	cap_ptr->tm_queue_query_flags          = (ODP_TM_QUERY_PKT_CNT |
 						  ODP_TM_QUERY_BYTE_CNT |
 						  ODP_TM_QUERY_THRESHOLDS);
+	cap_ptr->max_schedulers_per_node       = ODP_TM_MAX_PRIORITIES;
 
 	cap_ptr->dynamic_topology_update  = true;
 	cap_ptr->dynamic_shaper_update    = true;
 	cap_ptr->dynamic_sched_update     = true;
 	cap_ptr->dynamic_wred_update      = true;
 	cap_ptr->dynamic_threshold_update = true;
+
+	cap_ptr->pkt_prio_modes[ODP_TM_PKT_PRIO_MODE_PRESERVE] = true;
 
 	for (color = 0; color < ODP_NUM_PACKET_COLORS; color++)
 		cap_ptr->marking_colors_supported[color] =
@@ -2998,6 +3007,11 @@ odp_tm_t odp_tm_create(const char            *name,
 		return ODP_TM_INVALID;
 	}
 
+	/* We only support global pkt priority mode */
+	if (requirements->pkt_prio_mode != ODP_TM_PKT_PRIO_MODE_PRESERVE) {
+		ODP_ERR("Unsupported Packet priority mode\n");
+		return ODP_TM_INVALID;
+	}
 	odp_ticketlock_lock(&tm_glb->create_lock);
 
 	/* If we are using pktio output (usual case) get the first associated
