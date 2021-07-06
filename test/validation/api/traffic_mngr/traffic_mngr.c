@@ -388,6 +388,7 @@ static int test_overall_capabilities(void)
 	odp_tm_capabilities_t        capabilities_array[2];
 	odp_tm_capabilities_t       *cap_ptr;
 	odp_tm_egress_t              egress;
+	odp_bool_t                  *prio_modes;
 	uint32_t                     num_records, idx, num_levels, level;
 	int                          rc;
 
@@ -443,6 +444,11 @@ static int test_overall_capabilities(void)
 				return -1;
 			}
 		}
+
+		/* At least one pkt priority mode needs to be supported */
+		prio_modes = cap_ptr->pkt_prio_modes;
+		CU_ASSERT((prio_modes[ODP_TM_PKT_PRIO_MODE_PRESERVE] != 0) ||
+			  (prio_modes[ODP_TM_PKT_PRIO_MODE_OVERWRITE] != 0))
 	}
 
 	return 0;
@@ -1679,6 +1685,17 @@ set_reqs_based_on_capas(odp_tm_requirements_t *req)
 
 	if (tm_capabilities.tm_queue_shaper_supported)
 		req->tm_queue_shaper_needed = true;
+
+	/* Since packet priority mode effects only scheduler tests
+	 * and in our scheduler tests, we only test with set queues under
+	 * same parent node, we are fine with any packet priority mode.
+	 * This is because we are concerned with packet priority obeyed
+	 * at immediate parent node only.
+	 */
+	req->pkt_prio_mode = ODP_TM_PKT_PRIO_MODE_PRESERVE;
+	if (!tm_capabilities.pkt_prio_modes[ODP_TM_PKT_PRIO_MODE_PRESERVE])
+		req->pkt_prio_mode = ODP_TM_PKT_PRIO_MODE_OVERWRITE;
+
 }
 
 static int create_tm_system(void)
