@@ -445,6 +445,9 @@ static int test_overall_capabilities(void)
 			}
 		}
 
+		CU_ASSERT(cap_ptr->max_schedulers_per_node <=
+			  ODP_TM_MAX_PRIORITIES);
+
 		/* At least one pkt priority mode needs to be supported */
 		prio_modes = cap_ptr->pkt_prio_modes;
 		CU_ASSERT((prio_modes[ODP_TM_PKT_PRIO_MODE_PRESERVE] != 0) ||
