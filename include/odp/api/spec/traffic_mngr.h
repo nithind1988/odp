@@ -278,6 +278,54 @@ typedef struct {
 	 * of the weights allowed at this level. */
 	uint32_t max_weight;
 
+	/** Minimum allowed value for odp_tm_shaper_params_t::commit_burst or
+	 * odp_tm_shaper_params_t::peak_burst when
+	 * odp_tm_shaper_params_t::packet_mode is true.
+	 */
+	uint32_t min_burst_packets;
+
+	/** Maximum allowed value for odp_tm_shaper_params_t::commit_burst or
+	 * odp_tm_shaper_params_t::peak_burst when
+	 * odp_tm_shaper_params_t::packet_mode is true.
+	 */
+	uint32_t max_burst_packets;
+
+	/** Minimum allowed value for odp_tm_shaper_params_t::commit_rate or
+	 * odp_tm_shaper_params_t::peak_rate when
+	 * odp_tm_shaper_params_t::packet_mode is true.
+	 */
+	uint64_t min_rate_packets;
+
+	/** Maximum allowed value for odp_tm_shaper_params_t::commit_rate or
+	 * odp_tm_shaper_params_t::peak_rate when
+	 * odp_tm_shaper_params_t::packet_mode is true.
+	 */
+	uint64_t max_rate_packets;
+
+	/** Minimum allowed value for odp_tm_shaper_params_t::commit_burst or
+	 * odp_tm_shaper_params_t::peak_burst when
+	 * odp_tm_shaper_params_t::packet_mode is false.
+	 */
+	uint32_t min_burst;
+
+	/** Maximum allowed value for odp_tm_shaper_params_t::commit_burst or
+	 * odp_tm_shaper_params_t::peak_burst when
+	 * odp_tm_shaper_params_t::packet_mode is false.
+	 */
+	uint32_t max_burst;
+
+	/** Minimum allowed value for odp_tm_shaper_params_t::commit_rate or
+	 * odp_tm_shaper_params_t::peak_rate when
+	 * odp_tm_shaper_params_t::packet_mode is false.
+	 */
+	uint64_t min_rate;
+
+	/** Maximum allowed value for odp_tm_shaper_params_t::commit_rate or
+	 * odp_tm_shaper_params_t::peak_rate when
+	 * odp_tm_shaper_params_t::packet_mode is false.
+	 */
+	uint64_t max_rate;
+
 	/** tm_node_shaper_supported indicates that the tm_nodes at this level
 	 * all support TM shaping, */
 	odp_bool_t tm_node_shaper_supported;
