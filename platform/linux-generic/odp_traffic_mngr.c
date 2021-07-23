@@ -2607,6 +2607,10 @@ static int tm_capabilities(odp_tm_capabilities_t capabilities[],
 		per_level_cap->max_priority       = ODP_TM_MAX_PRIORITIES - 1;
 		per_level_cap->min_weight         = ODP_TM_MIN_SCHED_WEIGHT;
 		per_level_cap->max_weight         = ODP_TM_MAX_SCHED_WEIGHT;
+		per_level_cap->min_burst          = 1U;
+		per_level_cap->max_burst          = 0xFFFFFFFFU;
+		per_level_cap->min_rate           = ODP_TM_MIN_SHAPER_BW * 8U *	1000U;
+		per_level_cap->max_rate           = ODP_TM_MAX_SHAPER_BW * 8U *	1000U;
 
 		per_level_cap->tm_node_shaper_supported     = true;
 		per_level_cap->tm_node_wred_supported       = true;
@@ -2729,6 +2733,10 @@ static void tm_system_capabilities_set(odp_tm_capabilities_t *cap_ptr,
 		per_level_cap->max_priority       = max_priority;
 		per_level_cap->min_weight         = min_weight;
 		per_level_cap->max_weight         = max_weight;
+		per_level_cap->min_burst          = 1U;
+		per_level_cap->max_burst          = 0xFFFFFFFFU;
+		per_level_cap->min_rate           = ODP_TM_MIN_SHAPER_BW * 8U *	1000U;
+		per_level_cap->max_rate           = ODP_TM_MAX_SHAPER_BW * 8U *	1000U;
 
 		per_level_cap->tm_node_shaper_supported     = shaper_supported;
 		per_level_cap->tm_node_wred_supported       = wred_supported;
