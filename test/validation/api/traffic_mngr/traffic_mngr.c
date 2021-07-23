@@ -443,6 +443,20 @@ static int test_overall_capabilities(void)
 				CU_ASSERT(per_level->max_priority != 0);
 				return -1;
 			}
+
+			if (per_level->tm_node_shaper_supported) {
+				CU_ASSERT(per_level->max_burst > 0);
+				CU_ASSERT(per_level->min_burst > 0);
+				CU_ASSERT(per_level->min_rate > 0);
+				CU_ASSERT(per_level->max_rate > 0);
+			}
+
+			if (per_level->tm_node_shaper_packet_mode) {
+				CU_ASSERT(per_level->max_burst_packets > 0);
+				CU_ASSERT(per_level->min_burst_packets > 0);
+				CU_ASSERT(per_level->min_rate_packets > 0);
+				CU_ASSERT(per_level->max_rate_packets > 0);
+			}
 		}
 
 		/* At least one pkt priority mode needs to be supported */
